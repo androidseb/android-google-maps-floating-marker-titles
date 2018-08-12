@@ -1,5 +1,5 @@
 # Android Google Maps Floating Marker Titles
-This library is useful if you want to see the titles of the markers on the map floating next to the marker. It attempts to reproduce the behavior for points of interests shown on the map in Google Maps. Since there is no way to draw directly into the map component, it works as a view to apply on top of the map as an overlay.
+This library is useful if you want to see the titles of the markers on the map floating next to the marker. It attempts to reproduce the behavior for points of interest shown on the map in Google Maps. Since there is no way to draw directly into the map component, it works as a view to apply on top of the map as an overlay.
 
 ![](./visual_demo.gif)
 
