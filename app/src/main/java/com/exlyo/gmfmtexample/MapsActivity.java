@@ -15,6 +15,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.List;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
@@ -46,10 +48,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         final FloatingMarkerTitlesOverlay floatingMarkersOverlay = findViewById(R.id.map_floating_markers_overlay);
         floatingMarkersOverlay.setSource(googleMap);
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        final Marker marker = mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        floatingMarkersOverlay.addMarker(0, new MarkerInfo(marker, Color.GREEN));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        final List<MarkerInfo> markerInfoList = SampleMarkerData.getSampleMarkersInfo();
+        for (int i = 0; i < markerInfoList.size(); i++) {
+            final MarkerInfo mi = markerInfoList.get(i);
+            mMap.addMarker(new MarkerOptions().position(mi.getCoordinates()));
+            floatingMarkersOverlay.addMarker(i, mi);
+        }
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(markerInfoList.get(0).getCoordinates()));
     }
 }
