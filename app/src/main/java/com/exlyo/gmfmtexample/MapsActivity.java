@@ -1,13 +1,18 @@
 package com.exlyo.gmfmtexample;
 
+import android.graphics.Color;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.view.View;
 
+import com.exlyo.gmfmt.FloatingMarkerTitlesOverlay;
+import com.exlyo.gmfmt.MarkerInfo;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -38,9 +43,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        final FloatingMarkerTitlesOverlay floatingMarkersOverlay = findViewById(R.id.map_floating_markers_overlay);
+        floatingMarkersOverlay.setSource(googleMap);
+
         // Add a marker in Sydney and move the camera
         LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        final Marker marker = mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        floatingMarkersOverlay.addMarker(0, new MarkerInfo(marker, Color.GREEN));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 }
