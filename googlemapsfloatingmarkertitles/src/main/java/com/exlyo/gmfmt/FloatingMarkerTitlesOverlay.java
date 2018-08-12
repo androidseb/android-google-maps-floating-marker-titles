@@ -83,7 +83,7 @@ public class FloatingMarkerTitlesOverlay extends View {
 		textPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
 		textPaint.setStrokeWidth(GMFMTUtils.dipToPixels(getContext(), 3));
 
-		setTextSizeDIP(12);
+		setTextSizeDIP(14);
 		setTextPaddingToMarkerDIP(8);
 		setMaxFloatingTitlesCount(20);
 		setSetMaxNewMarkersCheckPerFrame(100);
