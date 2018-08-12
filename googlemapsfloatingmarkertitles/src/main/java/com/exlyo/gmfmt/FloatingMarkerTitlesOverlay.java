@@ -353,10 +353,11 @@ public class FloatingMarkerTitlesOverlay extends View {
 		textPaint.setStyle(Paint.Style.STROKE);
 		if (GMFMTUtils.isDarkColor(markerColor)) {
 			textPaint.setColor(Color.WHITE);
+			textPaint.setAlpha((int) (_alpha / 1.2F));
 		} else {
 			textPaint.setColor(Color.BLACK);
+			textPaint.setAlpha((int) (_alpha / 2F));
 		}
-		textPaint.setAlpha(_alpha / 2);
 		GMFMTUtils.drawMultiLineEllipsizedText(//
 			_canvas,//
 			textPaint,//
