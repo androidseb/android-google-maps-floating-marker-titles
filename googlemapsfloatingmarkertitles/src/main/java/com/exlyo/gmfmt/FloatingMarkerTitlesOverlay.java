@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
-import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.support.annotation.NonNull;
@@ -30,7 +29,7 @@ public class FloatingMarkerTitlesOverlay extends View {
 	private static final long FADE_ANIMATION_TIME = 300;
 
 	@Nullable
-	private GoogleMap googleMap;
+	private GMFMTGeometryCache geometryCache;
 
 	@NonNull
 	private final Map<Long, MarkerInfo> markerIdToMarkerInfoMap = new HashMap<>();
@@ -142,9 +141,10 @@ public class FloatingMarkerTitlesOverlay extends View {
 	public void setSource(@Nullable final GoogleMap _googleMap) {
 		if (_googleMap == null) {
 			clearMarkers();
-			this.googleMap = null;
+			geometryCache = null;
+		} else {
+			geometryCache = new GMFMTGeometryCache(this, _googleMap);
 		}
-		this.googleMap = _googleMap;
 	}
 
 	/**
@@ -193,19 +193,19 @@ public class FloatingMarkerTitlesOverlay extends View {
 	@Override
 	public void draw(final Canvas _canvas) {
 		super.draw(_canvas);
-		final GoogleMap gm = googleMap;
-		if (_canvas == null || gm == null) {
+		final GMFMTGeometryCache gc = geometryCache;
+		if (_canvas == null || gc == null) {
 			return;
 		}
 		synchronized (markerInfoList) {
-			drawFloatingMarkerTitles(_canvas, gm);
+			drawFloatingMarkerTitles(_canvas, gc);
 		}
 		postInvalidate();
 	}
 
-	private void drawFloatingMarkerTitles(@NonNull final Canvas _canvas, @NonNull final GoogleMap _googleMap) {
-		final GMFMTGeometryCache geometryCache = new GMFMTGeometryCache(this, _canvas, _googleMap.getProjection());
-		updateCurrentlyDisplayedMarkers(geometryCache);
+	private void drawFloatingMarkerTitles(@NonNull final Canvas _canvas, @NonNull final GMFMTGeometryCache _geometryCache) {
+		_geometryCache.prepareForNewFrame(_canvas);
+		updateCurrentlyDisplayedMarkers(_geometryCache);
 		for (final MarkerInfo mi : displayedMarkersList) {
 			drawMarkerFloatingTitle(_canvas, mi);
 		}
@@ -225,12 +225,11 @@ public class FloatingMarkerTitlesOverlay extends View {
 		for (final MarkerInfo mi : displayedMarkersList) {
 			final RectF currentArea = displayedMarkerIdToScreenRect.get(mi);
 			//We only recompute the location, because the text size is still correct and expensive to calculate
-			final Point newLocation = _geometryCache.get(mi.getCoordinates());
-			newLocation.x += textPaddingToMarker;
+			final Point newLocation = _geometryCache.getScreenLocation(mi.getCoordinates());
 			currentArea.set(//
-				(float) newLocation.x,//
+				(float) newLocation.x + textPaddingToMarker,//
 				(float) newLocation.y,//
-				(float) newLocation.x + currentArea.width(),//
+				(float) newLocation.x + textPaddingToMarker + currentArea.width(),//
 				(float) newLocation.y + currentArea.height()//
 			);
 			if (minVisibleZIndex > mi.getZIndex()) {
