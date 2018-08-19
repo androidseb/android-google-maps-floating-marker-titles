@@ -88,7 +88,7 @@ public class FloatingMarkerTitlesOverlay extends View {
 		setTextSizeDIP(14);
 		setTextPaddingToMarkerDIP(8);
 		setMaxFloatingTitlesCount(100);
-		setSetMaxNewMarkersCheckPerFrame(100);
+		setSetMaxNewMarkersCheckPerFrame(10);
 		setMaxTextWidthDIP(200);
 		setMaxTextHeightDIP(48);
 	}
