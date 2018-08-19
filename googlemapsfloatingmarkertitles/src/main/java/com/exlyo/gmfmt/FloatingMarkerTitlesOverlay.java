@@ -213,7 +213,7 @@ public class FloatingMarkerTitlesOverlay extends View {
 		// Remove the currently displayed markers that are no longer in the view bounds
 		removeOutOfViewMarkerTitles(_geometryCache);
 
-		// Remove the currently displayed marker foating titles that are in conflict with another displayed marker foating title
+		// Remove the currently displayed marker floating titles that are in conflict with another displayed marker floating title
 		removeConflictedMarkerTitles();
 
 		// Determine the minimum z-index among the visible floating marker titles
