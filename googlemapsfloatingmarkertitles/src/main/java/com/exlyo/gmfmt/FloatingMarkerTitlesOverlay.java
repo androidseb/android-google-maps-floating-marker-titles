@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.support.annotation.NonNull;
@@ -221,8 +223,16 @@ public class FloatingMarkerTitlesOverlay extends View {
 
 		// Update the displayed marker titles display area rectangles
 		for (final MarkerInfo mi : displayedMarkersList) {
-			final RectF displayAreaRect = _geometryCache.computeDisplayAreaRect(mi);
-			displayedMarkerIdToScreenRect.put(mi, displayAreaRect);
+			final RectF currentArea = displayedMarkerIdToScreenRect.get(mi);
+			//We only recompute the location, because the text size is still correct and expensive to calculate
+			final Point newLocation = _geometryCache.get(mi.getCoordinates());
+			newLocation.x += textPaddingToMarker;
+			currentArea.set(//
+				(float) newLocation.x,//
+				(float) newLocation.y,//
+				(float) newLocation.x + currentArea.width(),//
+				(float) newLocation.y + currentArea.height()//
+			);
 			if (minVisibleZIndex > mi.getZIndex()) {
 				minVisibleZIndex = mi.getZIndex();
 			}
