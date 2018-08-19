@@ -4,9 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
-import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextPaint;
@@ -14,8 +13,6 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.Projection;
-import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,17 +48,18 @@ public class FloatingMarkerTitlesOverlay extends View {
 	@NonNull
 	private final Map<MarkerInfo, Long> displayedMarkerIdToAddedTime = new HashMap<>();
 
-	private float textPaddingToMarker;
+	float textPaddingToMarker;
 
 	private int maxFloatingTitlesCount;
 
 	private int maxNewMarkersCheckPerFrame;
 
-	private float maxTextWidth;
+	float maxTextWidth;
 
-	private float maxTextHeight;
+	float maxTextHeight;
 
-	private TextPaint textPaint;
+	TextPaint regularTextPaint;
+	TextPaint boldTextPaint;
 
 	public FloatingMarkerTitlesOverlay(final Context context) {
 		super(context);
@@ -79,20 +77,25 @@ public class FloatingMarkerTitlesOverlay extends View {
 	}
 
 	private void initFMTOverlay() {
-		textPaint = new TextPaint();
-		textPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
-		textPaint.setStrokeWidth(GMFMTUtils.dipToPixels(getContext(), 3));
+		regularTextPaint = new TextPaint();
+		regularTextPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+		regularTextPaint.setStrokeWidth(GMFMTUtils.dipToPixels(getContext(), 3));
+		boldTextPaint = new TextPaint();
+		boldTextPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+		boldTextPaint.setStrokeWidth(GMFMTUtils.dipToPixels(getContext(), 3));
+		boldTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
 
 		setTextSizeDIP(14);
 		setTextPaddingToMarkerDIP(8);
-		setMaxFloatingTitlesCount(20);
+		setMaxFloatingTitlesCount(100);
 		setSetMaxNewMarkersCheckPerFrame(100);
 		setMaxTextWidthDIP(200);
 		setMaxTextHeightDIP(48);
 	}
 
 	public void setTextSizeDIP(final int _textSizeDIP) {
-		textPaint.setTextSize(GMFMTUtils.dipToPixels(getContext(), _textSizeDIP));
+		regularTextPaint.setTextSize(GMFMTUtils.dipToPixels(getContext(), _textSizeDIP));
+		boldTextPaint.setTextSize(GMFMTUtils.dipToPixels(getContext(), _textSizeDIP));
 	}
 
 	/**
@@ -199,45 +202,50 @@ public class FloatingMarkerTitlesOverlay extends View {
 	}
 
 	private void drawFloatingMarkerTitles(@NonNull final Canvas _canvas, @NonNull final GoogleMap _googleMap) {
-		final Projection mapProjection = _googleMap.getProjection();
-		updateCurrentlyDisplayedMarkers(_canvas, mapProjection);
+		final GMFMTGeometryCache geometryCache = new GMFMTGeometryCache(this, _canvas, _googleMap.getProjection());
+		updateCurrentlyDisplayedMarkers(geometryCache);
 		for (final MarkerInfo mi : displayedMarkersList) {
-			final RectF displayArea = displayedMarkerIdToScreenRect.get(mi);
-			if (displayArea == null) {
-				continue;
-			}
-			final Long addedTime = displayedMarkerIdToAddedTime.get(mi);
-			final int alpha;
-			if (addedTime == null) {
-				alpha = 255;
-			} else {
-				long currentTimeMillis = System.currentTimeMillis();
-				if (currentTimeMillis < addedTime) {
-					alpha = 255;
-				} else {
-					final long elapsedTime = currentTimeMillis - addedTime;
-					if (elapsedTime > FADE_ANIMATION_TIME) {
-						alpha = 255;
-					} else {
-						alpha = (int) ((float) elapsedTime / (float) FADE_ANIMATION_TIME * 255F);
-					}
-				}
-			}
-			drawMarkerFloatingTitle(_canvas, mi, displayArea, alpha);
+			drawMarkerFloatingTitle(_canvas, mi);
 		}
 	}
 
-	private void updateCurrentlyDisplayedMarkers(@NonNull final Canvas _canvas, @NonNull final Projection _mapProjection) {
-		final Rect currentViewBounds = new Rect(0, 0, GMFMTUtils.getCanvasWidth(_canvas), GMFMTUtils.getCanvasHeight(_canvas));
-
+	private void updateCurrentlyDisplayedMarkers(@NonNull final GMFMTGeometryCache _geometryCache) {
 		// Remove the currently displayed markers that are no longer in the view bounds
+		removeOutOfViewMarkerTitles(_geometryCache);
+
+		// Remove the currently displayed marker foating titles that are in conflict with another displayed marker foating title
+		removeConflictedMarkerTitles();
+
+		// Determine the minimum z-index among the visible floating marker titles
+		float minVisibleZIndex = 0F;
+
+		// Update the displayed marker titles display area rectangles
+		for (final MarkerInfo mi : displayedMarkersList) {
+			final RectF displayAreaRect = _geometryCache.computeDisplayAreaRect(mi);
+			displayedMarkerIdToScreenRect.put(mi, displayAreaRect);
+			if (minVisibleZIndex > mi.getZIndex()) {
+				minVisibleZIndex = mi.getZIndex();
+			}
+		}
+
+		// Prepare the list of markers to add
+		final List<MarkerInfo> markersToAdd = computeMarkersToAdd(_geometryCache, minVisibleZIndex);
+
+		// Fill the displayed markers list with markers to check
+		for (final MarkerInfo mi : markersToAdd) {
+			final RectF displayAreaRect = _geometryCache.computeDisplayAreaRect(mi);
+			displayedMarkersList.add(mi);
+			displayedMarkerIdToScreenRect.put(mi, displayAreaRect);
+			displayedMarkerIdToAddedTime.put(mi, System.currentTimeMillis());
+		}
+	}
+
+	private void removeOutOfViewMarkerTitles(@NonNull final GMFMTGeometryCache _geometryCache) {
 		for (int i = displayedMarkersList.size() - 1; i >= 0; i--) {
 			final MarkerInfo mi = displayedMarkersList.get(i);
-			final LatLng coordinates = mi.getCoordinates();
 			boolean needToRemove = false;
 			if (mi.isVisible()) {
-				final Point markerScreenLocation = _mapProjection.toScreenLocation(coordinates);
-				if (!currentViewBounds.contains(markerScreenLocation.x, markerScreenLocation.y)) {
+				if (!_geometryCache.isInScreenBounds(mi.getCoordinates())) {
 					needToRemove = true;
 				}
 			} else {
@@ -250,129 +258,192 @@ public class FloatingMarkerTitlesOverlay extends View {
 			displayedMarkerIdToScreenRect.remove(mi);
 			displayedMarkerIdToAddedTime.remove(mi);
 		}
+	}
 
-		// Remove the currently displayed marker foating titles that are in conflict with another displayed marker foating title
+	private void removeConflictedMarkerTitles() {
 		final List<MarkerInfo> markerInfoToRemove = new ArrayList<>();
+
+		float minZIndex = 0;
 		for (final MarkerInfo mi : displayedMarkerIdToScreenRect.keySet()) {
+			if (mi.getZIndex() < minZIndex) {
+				minZIndex = mi.getZIndex();
+			}
 			for (final MarkerInfo mi2 : displayedMarkerIdToScreenRect.keySet()) {
 				if (mi == mi2) {
+					continue;
+				}
+				if (markerInfoToRemove.contains(mi)) {
 					continue;
 				}
 				if (markerInfoToRemove.contains(mi2)) {
 					continue;
 				}
+				final boolean displayConflict;
 				final RectF miDisplayArea = displayedMarkerIdToScreenRect.get(mi);
 				final RectF mi2DisplayArea = displayedMarkerIdToScreenRect.get(mi2);
-				if (RectF.intersects(miDisplayArea, mi2DisplayArea)) {
-					markerInfoToRemove.add(mi);
+				displayConflict = RectF.intersects(miDisplayArea, mi2DisplayArea);
+				if (displayConflict) {
+					if (mi.getZIndex() > mi2.getZIndex()) {
+						markerInfoToRemove.add(mi2);
+					} else {
+						markerInfoToRemove.add(mi);
+					}
+
 					break;
 				}
 			}
 		}
+
+		for (int i = 0;//
+			 i < displayedMarkersList.size() &&//
+				 displayedMarkersList.size() - markerInfoToRemove.size() > maxFloatingTitlesCount//
+			; i++) {
+			final MarkerInfo mi = displayedMarkersList.get(i);
+			if (!markerInfoToRemove.contains(mi) && mi.getZIndex() == minZIndex) {
+				markerInfoToRemove.add(mi);
+			}
+		}
+
 		for (final MarkerInfo mi : markerInfoToRemove) {
 			displayedMarkersList.remove(mi);
 			displayedMarkerIdToScreenRect.remove(mi);
 			displayedMarkerIdToAddedTime.remove(mi);
 		}
+	}
 
-		// Update the displayed marker titles display area rectangles
-		for (final MarkerInfo mi : displayedMarkersList) {
-			final RectF displayAreaRect = computeDisplayAreaRect(_mapProjection, mi);
-			displayedMarkerIdToScreenRect.put(mi, displayAreaRect);
-		}
+	/**
+	 * Determines the list of markers to add next. Since the number of markers we will check is limited by maxNewMarkersCheckPerFrame, the
+	 * list rotation is essential to ensure all the markers in the list are checked eventually (over several draw() calls).
+	 * <p>
+	 * The created list will attempt to respect maxFloatingTitlesCount. However if some markers have a higher z-index than _minZIndex, they
+	 * will still be added, which will make the limit go over for the current frame.
+	 * On the next frame however, lower z-indexes will be discared.
+	 */
+	@NonNull
+	private List<MarkerInfo> computeMarkersToAdd(@NonNull final GMFMTGeometryCache _geometryCache, final float _minZIndex) {
+		final ArrayList<MarkerInfo> markersToAdd = new ArrayList<>();
 
-		// If the number of displayed floating titles is already maxed, we exit the function because we're done
-		if (displayedMarkersList.size() >= maxFloatingTitlesCount) {
-			return;
-		}
-
-		// Fill up the displayed markers list with visible markers
+		// Adding the maximum number of markers to markersToAdd
 		final int numberOfMarkersToCheck = Math.min(markerInfoList.size(), maxNewMarkersCheckPerFrame);
 		for (int i = 0; i < numberOfMarkersToCheck; i++) {
+			// List rotation, we will take the first element of the list and put it to the end, numberOfMarkersToCheck times
 			final MarkerInfo mi = markerInfoList.remove(0);
 			markerInfoList.add(mi);
+
 			if (!mi.isVisible()) {
-				// If the marker is not visible, we continue to the next marker
+				// If the marker is not visible, we don't add it
 				continue;
 			}
 			if (displayedMarkersList.contains(mi)) {
-				// If the marker is already in the displayed markers, we continue to the next marker
-				continue;
-			}
-			final LatLng coordinates = mi.getCoordinates();
-			final Point markerScreenLocation = _mapProjection.toScreenLocation(coordinates);
-			if (!currentViewBounds.contains(markerScreenLocation.x, markerScreenLocation.y)) {
-				// If the marker is not visible, we continue to the next marker
+				// If the marker is already in the displayed markers, we don't add it
 				continue;
 			}
 
-			final RectF displayAreaRect = computeDisplayAreaRect(_mapProjection, mi);
-			boolean displayAreaConflict = false;
-			for (final RectF rect : displayedMarkerIdToScreenRect.values()) {
-				if (RectF.intersects(rect, displayAreaRect)) {
-					displayAreaConflict = true;
-					break;
-				}
-			}
-			if (displayAreaConflict) {
-				// If the marker is in conflict with another marker (title overlap), we continue to the next marker
+			if (isMarkerTitleInConflictWithDisplay(_geometryCache, mi)) {
+				// If the marker is in conflict with display, we don't add it
 				continue;
 			}
 
-			displayedMarkersList.add(mi);
-			displayedMarkerIdToScreenRect.put(mi, displayAreaRect);
-			displayedMarkerIdToAddedTime.put(mi, System.currentTimeMillis());
+			markersToAdd.add(mi);
+		}
 
-			// If the number of displayed floating titles is already maxed, we exit the function because we're done
-			if (displayedMarkersList.size() >= maxFloatingTitlesCount) {
-				return;
+		// While we're above display limit count, we remove markers without a stricly higher z-index than _minZIndex
+		final int remainingDisplaySlots = maxFloatingTitlesCount - displayedMarkersList.size();
+
+		for (int i = markersToAdd.size() - 1; i >= 0 && remainingDisplaySlots < markersToAdd.size(); i--) {
+			final MarkerInfo mi = markersToAdd.get(i);
+			if (!_geometryCache.isInScreenBounds(mi.getCoordinates())) {
+				// If the marker is not visible, we remove it
+				markersToAdd.remove(i);
 			}
 		}
+		for (int i = markersToAdd.size() - 1; i >= 0 && remainingDisplaySlots < markersToAdd.size(); i--) {
+			final MarkerInfo mi = markersToAdd.get(i);
+			if (mi.getZIndex() <= _minZIndex) {
+				markersToAdd.remove(i);
+			}
+		}
+
+		return markersToAdd;
 	}
 
-	@NonNull
-	private RectF computeDisplayAreaRect(@NonNull final Projection _mapProjection, @NonNull final MarkerInfo _markerInfo) {
-		final Point screenLocation = _mapProjection.toScreenLocation(_markerInfo.getCoordinates());
-		final Point textSize = GMFMTUtils.measureMultiLineEllipsizedText(//
-			textPaint,//
-			(int) maxTextWidth,//
-			(int) maxTextHeight,//
-			_markerInfo.getTitle()//
-		);
-		final float left = screenLocation.x + textPaddingToMarker;
-		final int top = screenLocation.y - textSize.y / 2;
-		final int right = screenLocation.x + textSize.x;
-		final int bottom = screenLocation.y + textSize.y / 2;
-		return new RectF(left, top, right, bottom);
+	private boolean isMarkerTitleInConflictWithDisplay(final GMFMTGeometryCache _geometryCache, final MarkerInfo _markerInfo) {
+		final RectF displayAreaRect = _geometryCache.computeDisplayAreaRect(_markerInfo);
+		for (final MarkerInfo mi2 : displayedMarkerIdToScreenRect.keySet()) {
+			final RectF rect = displayedMarkerIdToScreenRect.get(mi2);
+			if (RectF.intersects(rect, displayAreaRect)) {
+				// If _markerInfo is in conflict with another marker, we compare the z-index
+				if (_markerInfo.getZIndex() <= mi2.getZIndex()) {
+					// If _markerInfo has equal or lower Z-index, it's considered in conflict with display
+					return true;
+				}
+				// If _markerInfo has higher Z-index, it's considered prioritary compared to the other marker
+			}
+		}
+		return false;
 	}
 
-	private void drawMarkerFloatingTitle(final @NonNull Canvas _canvas, @NonNull final MarkerInfo _markerInfo,
+	private void drawMarkerFloatingTitle(final @NonNull Canvas _canvas, @Nullable final MarkerInfo _markerInfo) {
+		if (_markerInfo == null) {
+			return;
+		}
+		final RectF displayArea = displayedMarkerIdToScreenRect.get(_markerInfo);
+		if (displayArea == null) {
+			return;
+		}
+		final Long addedTime = displayedMarkerIdToAddedTime.get(_markerInfo);
+		final int alpha = computeMarkerFloatingTitleAlpha(addedTime);
+		drawMarkerFloatingTitleOnCanvas(_canvas, _markerInfo, displayArea, alpha);
+	}
+
+	private int computeMarkerFloatingTitleAlpha(@Nullable final Long _addedTime) {
+		final int alpha;
+		if (_addedTime == null) {
+			alpha = 255;
+		} else {
+			long currentTimeMillis = System.currentTimeMillis();
+			if (currentTimeMillis < _addedTime) {
+				alpha = 255;
+			} else {
+				final long elapsedTime = currentTimeMillis - _addedTime;
+				if (elapsedTime > FADE_ANIMATION_TIME) {
+					alpha = 255;
+				} else {
+					alpha = (int) ((float) elapsedTime / (float) FADE_ANIMATION_TIME * 255F);
+				}
+			}
+		}
+		return alpha;
+	}
+
+	private void drawMarkerFloatingTitleOnCanvas(final @NonNull Canvas _canvas, @NonNull final MarkerInfo _markerInfo,
 		@NonNull final RectF _displayArea, final int _alpha) {
 		final int markerColor = _markerInfo.getColor();
 		final String markerTitle = _markerInfo.getTitle();
-		textPaint.setStyle(Paint.Style.STROKE);
+		final TextPaint usedTextPaint = _markerInfo.isBoldText() ? boldTextPaint : regularTextPaint;
+		usedTextPaint.setStyle(Paint.Style.STROKE);
 		if (GMFMTUtils.isDarkColor(markerColor)) {
-			textPaint.setColor(Color.WHITE);
-			textPaint.setAlpha((int) (_alpha / 1.2F));
+			usedTextPaint.setColor(Color.WHITE);
+			usedTextPaint.setAlpha((int) (_alpha / 1.2F));
 		} else {
-			textPaint.setColor(Color.BLACK);
-			textPaint.setAlpha((int) (_alpha / 2F));
+			usedTextPaint.setColor(Color.BLACK);
+			usedTextPaint.setAlpha((int) (_alpha / 2F));
 		}
 		GMFMTUtils.drawMultiLineEllipsizedText(//
 			_canvas,//
-			textPaint,//
+			usedTextPaint,//
 			_displayArea.left,//
 			_displayArea.top,//
 			_displayArea.left + maxTextWidth,//
 			_displayArea.bottom,//
 			markerTitle//
 		);
-		textPaint.setStyle(Paint.Style.FILL);
-		textPaint.setColor(markerColor);
-		textPaint.setAlpha(_alpha);
+		usedTextPaint.setStyle(Paint.Style.FILL);
+		usedTextPaint.setColor(markerColor);
+		usedTextPaint.setAlpha(_alpha);
 		GMFMTUtils.drawMultiLineEllipsizedText(//
 			_canvas,//
-			textPaint,//
+			usedTextPaint,//
 			_displayArea.left,//
 			_displayArea.top,//
 			_displayArea.left + maxTextWidth,//
