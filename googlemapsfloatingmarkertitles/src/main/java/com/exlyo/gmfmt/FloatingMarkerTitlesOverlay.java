@@ -438,26 +438,28 @@ public class FloatingMarkerTitlesOverlay extends View {
 			usedTextPaint.setColor(Color.BLACK);
 			usedTextPaint.setAlpha((int) (_alpha / 2F));
 		}
-		GMFMTUtils.drawMultiLineEllipsizedText(//
+		final String truncatedText = GMFMTUtils.getTruncatedText(usedTextPaint, maxTextWidth, _displayArea.height(), markerTitle);
+		if (truncatedText == null) {
+			return;
+		}
+		GMFMTUtils.drawMultiLineText(//
 			_canvas,//
 			usedTextPaint,//
 			_displayArea.left,//
 			_displayArea.top,//
-			_displayArea.left + maxTextWidth,//
-			_displayArea.bottom,//
-			markerTitle//
+			maxTextWidth,//
+			truncatedText//
 		);
 		usedTextPaint.setStyle(Paint.Style.FILL);
 		usedTextPaint.setColor(markerColor);
 		usedTextPaint.setAlpha(_alpha);
-		GMFMTUtils.drawMultiLineEllipsizedText(//
+		GMFMTUtils.drawMultiLineText(//
 			_canvas,//
 			usedTextPaint,//
 			_displayArea.left,//
 			_displayArea.top,//
-			_displayArea.left + maxTextWidth,//
-			_displayArea.bottom,//
-			markerTitle//
+			maxTextWidth,//
+			truncatedText//
 		);
 	}
 }

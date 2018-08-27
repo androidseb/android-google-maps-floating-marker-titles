@@ -7,6 +7,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -65,26 +66,36 @@ public final class GMFMTUtils {
 		return new Point(resWidth, resHeight);
 	}
 
-	public static void drawMultiLineEllipsizedText(@NonNull final Canvas _canvas, @NonNull final TextPaint _textPaint, final float _left,
-		final float _top, final float _right, final float _bottom, @NonNull final String _text) {
-		final float height = _bottom - _top;
+	public static void drawMultiLineText(@NonNull final Canvas _canvas, @NonNull final TextPaint _textPaint, final float _x, final float _y,
+		final float _width, @NonNull final String _text) {
+		final StaticLayout drawingTextLayout =
+			new StaticLayout(_text, _textPaint, (int) Math.abs(_width), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
+		_canvas.save();
+		_canvas.translate(_x, _y);
+		drawingTextLayout.draw(_canvas);
+		_canvas.restore();
+	}
+
+	@Nullable
+	public static String getTruncatedText(final @NonNull TextPaint _textPaint, final float _width, final float _height,
+		final @NonNull String _text) {
 		final StaticLayout measuringTextLayout =
-			new StaticLayout(_text, _textPaint, (int) Math.abs(_right - _left), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+			new StaticLayout(_text, _textPaint, (int) Math.abs(_width), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
 		final int totalLineCount = measuringTextLayout.getLineCount();
 
 		int line;
 		for (line = 1; line < totalLineCount; line++) {
 			final int lineBottom = measuringTextLayout.getLineBottom(line);
-			if (lineBottom > height) {
+			if (lineBottom > _height) {
 				break;
 			}
 		}
 		line--;
 
 		if (line < 0) {
-			return;
+			return null;
 		}
 
 		int lineEnd;
@@ -96,19 +107,13 @@ public final class GMFMTUtils {
 		String truncatedText = _text.substring(0, Math.max(0, lineEnd));
 
 		if (truncatedText.length() < 3) {
-			return;
+			return null;
 		}
 
 		if (truncatedText.length() < _text.length()) {
 			truncatedText = truncatedText.substring(0, Math.max(0, truncatedText.length() - 3));
 			truncatedText += "...";
 		}
-		final StaticLayout drawingTextLayout =
-			new StaticLayout(truncatedText, _textPaint, (int) Math.abs(_right - _left), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-
-		_canvas.save();
-		_canvas.translate(_left, _top);
-		drawingTextLayout.draw(_canvas);
-		_canvas.restore();
+		return truncatedText;
 	}
 }
