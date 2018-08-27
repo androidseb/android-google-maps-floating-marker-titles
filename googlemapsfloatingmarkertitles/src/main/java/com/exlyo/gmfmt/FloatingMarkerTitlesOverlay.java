@@ -228,9 +228,9 @@ public class FloatingMarkerTitlesOverlay extends View {
 			final Point newLocation = _geometryCache.getScreenLocation(mi.getCoordinates());
 			currentArea.set(//
 				(float) newLocation.x + textPaddingToMarker,//
-				(float) newLocation.y,//
+				(float) newLocation.y - currentArea.height() / 2,//
 				(float) newLocation.x + textPaddingToMarker + currentArea.width(),//
-				(float) newLocation.y + currentArea.height()//
+				(float) newLocation.y + currentArea.height() / 2//
 			);
 			if (minVisibleZIndex > mi.getZIndex()) {
 				minVisibleZIndex = mi.getZIndex();
