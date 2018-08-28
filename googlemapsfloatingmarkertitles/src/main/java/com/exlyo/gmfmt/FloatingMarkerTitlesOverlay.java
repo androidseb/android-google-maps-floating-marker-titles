@@ -121,7 +121,7 @@ public class FloatingMarkerTitlesOverlay extends View {
 
 	/**
 	 * Set the maximum number of checks for new markers every display frame. Raising the value will decrease performance for maps with a
-	 * lot of markers, but increase responsiveness when a marker's title should appear. The default value is 100.
+	 * lot of markers, but increase responsiveness when a marker's title should appear. The default value is 10.
 	 * <p>
 	 * For example, if you set this value to 50 and you have 2000 markers, it might take up to 2000/50 = 40 frames before a specific
 	 * marker's title to appear when it should display. Assuming you're having 60 frames per second, it will take about 0.66 seconds.

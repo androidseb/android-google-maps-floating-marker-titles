@@ -47,7 +47,9 @@ floatingMarkersOverlay.addMarker(id, mi);
 ## Main library features
 - Display floating markers titles on top of the map
 - Works with ancient versions of Android: minSdkVersion 9
-- Avoid overlap between floating marker titles, will not display a title if overlapping with others
+- Automatically avoids overlap between floating marker titles, will not display a title if overlapping with others
+- Set z-indexes for floating marker titles to specify which title has the most priority for display: <code>MarkerInfo.setZIndex(...)</code>
+- Set whether floating marker titles should be written in bold: <code>MarkerInfo.setBoldText(...)</code>
 - Marker title text transparent outline for better visuals: the text will be readable no matter the map background and the outline color will adapt to white or black depending on the text color's luminance (perceived brightness)
 - Marker title fade-in animation for better visuals
 - Set the text size: <code>FloatingMarkerTitlesOverlay.setTextSizeDIP(...)</code>
