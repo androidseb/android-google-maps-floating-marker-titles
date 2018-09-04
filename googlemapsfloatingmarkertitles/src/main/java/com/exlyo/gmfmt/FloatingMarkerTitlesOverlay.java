@@ -117,6 +117,7 @@ public class FloatingMarkerTitlesOverlay extends View {
 			displayedMarkerIdToScreenRect.clear();
 			displayedMarkerIdToAddedTime.clear();
 		}
+		postInvalidate();
 	}
 
 	/**
@@ -193,6 +194,9 @@ public class FloatingMarkerTitlesOverlay extends View {
 	@Override
 	public void draw(final Canvas _canvas) {
 		super.draw(_canvas);
+		if (maxFloatingTitlesCount == 0) {
+			return;
+		}
 		final GMFMTGeometryCache gc = geometryCache;
 		if (_canvas == null || gc == null) {
 			return;
