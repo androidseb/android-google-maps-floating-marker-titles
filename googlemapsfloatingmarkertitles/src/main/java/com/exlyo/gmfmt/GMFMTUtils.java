@@ -14,7 +14,7 @@ import android.text.TextPaint;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 
-public final class GMFMTUtils {
+final class GMFMTUtils {
 	private static final float MIN_LUMINANCE_TO_LIGHT_TINTING = 0.75F;
 
 	private static float colorLuminance(@ColorInt int _color) {
@@ -80,6 +80,9 @@ public final class GMFMTUtils {
 	@Nullable
 	public static String getTruncatedText(final @NonNull TextPaint _textPaint, final float _width, final float _height,
 		final @NonNull String _text) {
+		if (_text.length() < 3) {
+			return _text;
+		}
 		final StaticLayout measuringTextLayout =
 			new StaticLayout(_text, _textPaint, (int) Math.abs(_width), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 

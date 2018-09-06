@@ -102,7 +102,6 @@ public class FloatingMarkerTitlesOverlay extends View {
 	/**
 	 * Set the spacing between the marker location and the floating text
 	 */
-	@SuppressWarnings("unused")
 	public void setTextPaddingToMarkerDIP(final int _textPaddingToMarkerDIP) {
 		textPaddingToMarker = GMFMTUtils.dipToPixels(getContext(), _textPaddingToMarkerDIP);
 	}

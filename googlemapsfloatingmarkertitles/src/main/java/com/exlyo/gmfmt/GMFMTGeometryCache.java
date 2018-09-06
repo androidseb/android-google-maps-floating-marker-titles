@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class GMFMTGeometryCache {
+class GMFMTGeometryCache {
 	@NonNull
 	private final FloatingMarkerTitlesOverlay fmto;
 	@NonNull
