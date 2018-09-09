@@ -450,7 +450,7 @@ public class FloatingMarkerTitlesOverlay extends View {
 			usedTextPaint,//
 			_displayArea.left,//
 			_displayArea.top,//
-			maxTextWidth,//
+			_displayArea.width(),//
 			truncatedText//
 		);
 		usedTextPaint.setStyle(Paint.Style.FILL);
@@ -461,7 +461,7 @@ public class FloatingMarkerTitlesOverlay extends View {
 			usedTextPaint,//
 			_displayArea.left,//
 			_displayArea.top,//
-			maxTextWidth,//
+			_displayArea.width(),//
 			truncatedText//
 		);
 	}
