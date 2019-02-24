@@ -61,3 +61,9 @@ floatingMarkersOverlay.addMarker(id, mi);
 - No performance drop with more markers once the maximum number of floating titles has been reached, since the library only scans for a limited number of markers per frame, which can be set with <code>FloatingMarkerTitlesOverlay.setSetMaxNewMarkersCheckPerFrame(...)</code>
 - Set the maximum width of floating titles: <code>FloatingMarkerTitlesOverlay.setMaxTextWidthDIP(...)</code>
 - Set the maximum height of floating titles: <code>FloatingMarkerTitlesOverlay.setMaxTextHeightDIP(...)</code>
+
+
+## About issues and/or feature requests
+I am not willing to invest time to take feature requests at the moment since this library has sufficient features for my needs as is.
+If you find a bug, I'll probably want to fix it since it might affect my production app, so feel free to report any bugs you may find.
+If you need a feature and want build it and then submit it as a pull request, I'm willing to work with you to merge your work into the current code though.
