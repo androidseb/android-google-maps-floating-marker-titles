@@ -2,10 +2,9 @@
 
 This library is useful if you want to see the titles of the markers on the map floating next to the marker. It attempts to reproduce the behavior for points of interest shown on the map in Google Maps. Since there is no way to draw directly into the map component, it works as a view to apply on top of the map as an overlay.
 
-I created this library for my app Map Marker (not open source at the moment):
-https://play.google.com/store/apps/details?id=com.exlyo.mapmarker
+I initially created this library for [the Android version of Map Marker](https://play.google.com/store/apps/details?id=com.exlyo.mapmarker) when it was still using Android native code, I've since then moved to Flutter. You can still download the APK of the last version of Map Marker still using this library [here](https://github.com/androidseb/mapmarker/releases/tag/map_marker_v2).
 
-**Note:** If you're looking for a cross-platform implementation, I've created the [flutter_map_floating_marker_titles](https://github.com/androidseb/flutter_map_floating_marker_titles) library for Flutter (not used on production yet).
+**Note:** If you're looking for a cross-platform implementation, I've created the [flutter_map_floating_marker_titles](https://github.com/androidseb/flutter_map_floating_marker_titles) library for Flutter.
 
 ## Visual Preview
 
